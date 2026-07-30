@@ -1,259 +1,530 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Digital Clock</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Manrope:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg-0:#08090b;
-    --bg-1:#0e1013;
-    --ink:#eae6df;
-    --ink-dim:#5c6068;
-    --amber:#c9a24d;
-    --amber-dim:#7a6733;
-  }
+  <meta charset="UTF-8">
+  <title>Digital Clock — PH Time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Manrope:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-0: #08090b;
+      --bg-1: #0e1013;
+      --ink: #eae6df;
+      --ink-dim: #5c6068;
+      --amber: #c9a24d;
+      --amber-dim: #7a6733;
+      --alarm: var(--amber);
+      --alarm-dim: var(--amber-dim);
+      --alarm-glow: rgba(201, 162, 77, 0.16);
+    }
 
-  html, body{
-    margin:0;
-    padding:0;
-    width:100%;
-    height:100%;
-    background:var(--bg-0);
-    overflow:hidden;
-  }
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-0);
+      overflow: hidden;
+    }
 
-  .stage{
-    width:100vw;
-    height:100vh;
-    aspect-ratio:1/1;
-    max-width:100vmin;
-    max-height:100vmin;
-    margin:0 auto;
-    position:relative;
-    background:
-      radial-gradient(circle at 50% 42%, var(--bg-1) 0%, var(--bg-0) 68%);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    overflow:hidden;
-  }
+    .stage {
+      width: 100vw;
+      height: 100vh;
+      aspect-ratio: 1/1;
+      max-width: 100vmin;
+      max-height: 100vmin;
+      margin: 0 auto;
+      position: relative;
+      background:
+        radial-gradient(circle at 50% 42%, var(--bg-1) 0%, var(--bg-0) 68%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transition: background 1.2s ease;
+    }
 
-  /* faint vignette + grain for depth */
-  .vignette{
-    position:absolute; inset:0;
-    box-shadow: inset 0 0 18vmin 2vmin rgba(0,0,0,0.65);
-    pointer-events:none;
-  }
+    /* faint vignette + grain for depth */
+    .vignette {
+      position: absolute;
+      inset: 0;
+      box-shadow: inset 0 0 18vmin 2vmin rgba(0, 0, 0, 0.65);
+      pointer-events: none;
+    }
 
-  .grain{
-    position:absolute; inset:0;
-    opacity:0.05;
-    pointer-events:none;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-    mix-blend-mode: overlay;
-  }
+    .grain {
+      position: absolute;
+      inset: 0;
+      opacity: 0.05;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+      mix-blend-mode: overlay;
+    }
 
-  /* thin radial tick ring, minute marks -- a quiet clock-face echo */
-  .ticks{
-    position:absolute;
-    width:78vmin; height:78vmin;
-    border-radius:50%;
-    pointer-events:none;
-  }
-  .tick{
-    position:absolute;
-    left:50%; top:50%;
-    width:1px;
-    height:1.6vmin;
-    background:var(--ink-dim);
-    opacity:0.35;
-    transform-origin:50% 39vmin;
-  }
-  .tick.major{
-    height:2.6vmin;
-    width:1.5px;
-    background:var(--amber-dim);
-    opacity:0.55;
-  }
+    /* thin radial tick ring, minute marks -- a quiet clock-face echo */
+    .ticks {
+      position: absolute;
+      width: 78vmin;
+      height: 78vmin;
+      border-radius: 50%;
+      pointer-events: none;
+    }
 
-  .digital{
-    font-family:'Space Mono', monospace;
-    font-variant-numeric: tabular-nums;
-    letter-spacing:0.02em;
-  }
+    .tick {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 1px;
+      height: 1.6vmin;
+      background: var(--ink-dim);
+      opacity: 0.35;
+      transform-origin: 50% 39vmin;
+      transition: background 1.2s ease;
+    }
 
-  .time-row{
-    display:flex;
-    align-items:baseline;
-    justify-content:center;
-    line-height:1;
-  }
+    .tick.major {
+      height: 2.6vmin;
+      width: 1.5px;
+      background: var(--alarm-dim);
+      opacity: 0.55;
+      transition: background 1.2s ease;
+    }
 
-  .hms{
-    font-size:14vmin;
-    font-weight:700;
-    color:var(--ink);
-    text-shadow: 0 0 3.2vmin rgba(201,162,77,0.16), 0 0 0.4vmin rgba(234,230,223,0.25);
-    letter-spacing:0.03em;
-  }
+    .digital {
+      font-family: 'Space Mono', monospace;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+    }
 
-  .sec{
-    font-size:6vmin;
-    font-weight:700;
-    color:var(--amber);
-    margin-left:1.4vmin;
-    align-self:flex-end;
-    padding-bottom:1.6vmin;
-    opacity:0.9;
-    text-shadow: 0 0 2.4vmin rgba(201,162,77,0.35);
-  }
+    .time-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      line-height: 1;
+    }
 
-  .colon{
-    display:inline-block;
-    transition:opacity 0.15s ease;
-  }
-  .colon.dim{ opacity:0.22; }
+    .hms {
+      font-size: 14vmin;
+      font-weight: 700;
+      color: var(--ink);
+      text-shadow: 0 0 3.2vmin var(--alarm-glow), 0 0 0.4vmin rgba(234, 230, 223, 0.25);
+      letter-spacing: 0.03em;
+      transition: text-shadow 1.2s ease;
+    }
 
-  .meta-row{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:1.6vmin;
-    margin-top:2.6vmin;
-  }
+    .sec {
+      font-size: 6vmin;
+      font-weight: 700;
+      color: var(--alarm);
+      margin-left: 1.4vmin;
+      align-self: flex-end;
+      padding-bottom: 1.6vmin;
+      opacity: 0.9;
+      text-shadow: 0 0 2.4vmin var(--alarm-glow);
+      transition: color 1.2s ease, text-shadow 1.2s ease;
+    }
 
-  .date-label{
-    font-family:'Manrope', sans-serif;
-    font-weight:400;
-    font-size:2.1vmin;
-    letter-spacing:0.42em;
-    text-transform:uppercase;
-    color:var(--ink-dim);
-  }
+    .colon {
+      display: inline-block;
+      transition: opacity 0.15s ease;
+    }
 
-  .divider{
-    width:0.55vmin; height:0.55vmin;
-    border-radius:50%;
-    background:var(--amber-dim);
-  }
+    .colon.dim {
+      opacity: 0.22;
+    }
 
-  .ampm{
-    font-family:'Manrope', sans-serif;
-    font-weight:500;
-    font-size:2.3vmin;
-    letter-spacing:0.28em;
-    color:var(--amber);
-    margin-left:2vmin;
-    align-self:center;
-  }
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.6vmin;
+      margin-top: 2.6vmin;
+    }
 
-  .frame-label{
-    position:absolute;
-    top:5.4vmin;
-    left:0; right:0;
-    text-align:center;
-    font-family:'Manrope', sans-serif;
-    font-size:1.5vmin;
-    letter-spacing:0.5em;
-    text-transform:uppercase;
-    color:var(--ink-dim);
-    opacity:0.55;
-  }
+    .date-label {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 400;
+      font-size: 2.1vmin;
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
 
-  .hint{
-    position:absolute;
-    bottom:2.6vmin;
-    left:0; right:0;
-    text-align:center;
-    font-family:'Manrope', sans-serif;
-    font-size:1.3vmin;
-    letter-spacing:0.15em;
-    color:var(--ink-dim);
-    opacity:0;
-    transition:opacity 0.4s ease;
-  }
-  .stage:hover .hint{ opacity:0.4; }
+    .divider {
+      width: 0.55vmin;
+      height: 0.55vmin;
+      border-radius: 50%;
+      background: var(--alarm-dim);
+      transition: background 1.2s ease;
+    }
 
-  @media (prefers-reduced-motion: reduce){
-    .colon{ transition:none; }
-  }
-</style>
+    .ampm {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 500;
+      font-size: 2.3vmin;
+      letter-spacing: 0.28em;
+      color: var(--alarm);
+      margin-left: 2vmin;
+      align-self: center;
+      transition: color 1.2s ease;
+    }
+
+    .frame-label {
+      position: absolute;
+      top: 5.4vmin;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'Manrope', sans-serif;
+      font-size: 1.5vmin;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      opacity: 0.55;
+    }
+
+    .next-event {
+      position: absolute;
+      top: 9.4vmin;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'Manrope', sans-serif;
+      font-size: 1.25vmin;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      opacity: 0.4;
+    }
+
+    .hint {
+      position: absolute;
+      bottom: 2.6vmin;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'Manrope', sans-serif;
+      font-size: 1.3vmin;
+      letter-spacing: 0.15em;
+      color: var(--ink-dim);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .stage:hover .hint {
+      opacity: 0.4;
+    }
+
+    /* --- Alarm banner --- */
+    .alarm-banner {
+      position: absolute;
+      top: 16.5vmin;
+      left: 50%;
+      transform: translateX(-50%) translateY(-0.6vmin);
+      padding: 1.1vmin 3.2vmin;
+      border: 1px solid var(--alarm);
+      border-radius: 999px;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 500;
+      font-size: 1.7vmin;
+      letter-spacing: 0.38em;
+      text-transform: uppercase;
+      color: var(--alarm);
+      background: rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      white-space: nowrap;
+    }
+
+    .alarm-banner.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      animation: alarmPulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes alarmPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 var(--alarm-glow);
+      }
+
+      50% {
+        box-shadow: 0 0 3vmin 0.4vmin var(--alarm-glow);
+      }
+    }
+
+    .test-controls {
+      position: absolute;
+      bottom: 2.6vmin;
+      left: 2.6vmin;
+      display: flex;
+      gap: 1vmin;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .stage:hover .test-controls {
+      opacity: 0.55;
+    }
+
+    .test-controls button {
+      font-family: 'Manrope', sans-serif;
+      font-size: 1.1vmin;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      background: transparent;
+      border: 1px solid var(--ink-dim);
+      border-radius: 999px;
+      padding: 0.6vmin 1.4vmin;
+      cursor: pointer;
+    }
+
+    .test-controls button:hover {
+      color: var(--ink);
+      border-color: var(--ink);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .colon {
+        transition: none;
+      }
+
+      .alarm-banner.show {
+        animation: none;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="stage" id="stage">
-  <div class="vignette"></div>
-  <div class="grain"></div>
+  <div class="stage" id="stage">
+    <div class="vignette"></div>
+    <div class="grain"></div>
 
-  <div class="ticks" id="ticks"></div>
+    <div class="ticks" id="ticks"></div>
 
-  <div class="frame-label">Local Time</div>
+    <div class="frame-label">Local Time · Philippines</div>
+    <div class="next-event" id="nextEvent">—</div>
 
-  <div class="center">
-    <div class="time-row">
-      <span class="hms digital" id="time">00:00</span><span class="sec digital" id="seconds">00</span>
-      <span class="ampm" id="ampm">AM</span>
+    <div class="alarm-banner" id="alarmBanner">Lunch Break</div>
+
+    <div class="center">
+      <div class="time-row">
+        <span class="hms digital" id="time">00:00</span><span class="sec digital" id="seconds">00</span>
+        <span class="ampm" id="ampm">AM</span>
+      </div>
+      <div class="meta-row">
+        <span class="date-label" id="date">—</span>
+      </div>
     </div>
-    <div class="meta-row">
-      <span class="date-label" id="date">—</span>
+
+    <div class="hint">double‑click for fullscreen</div>
+
+    <div class="test-controls">
+      <button id="testLunch">Test Lunch Alarm</button>
+      <button id="testEnd">Test End‑of‑Work Alarm</button>
     </div>
   </div>
 
-  <div class="hint">double‑click for fullscreen</div>
-</div>
-
-<script>
-  // build a quiet tick ring: 60 marks, majors every 5
-  const ticksEl = document.getElementById('ticks');
-  for (let i = 0; i < 60; i++){
-    const t = document.createElement('div');
-    t.className = 'tick' + (i % 5 === 0 ? ' major' : '');
-    t.style.transform = `translate(-50%,-50%) rotate(${i * 6}deg)`;
-    ticksEl.appendChild(t);
-  }
-
-  const timeEl = document.getElementById('time');
-  const secEl = document.getElementById('seconds');
-  const ampmEl = document.getElementById('ampm');
-  const dateEl = document.getElementById('date');
-
-  const pad = n => String(n).padStart(2, '0');
-
-  function render(){
-    const now = new Date();
-    let h = now.getHours();
-    const m = now.getMinutes();
-    const s = now.getSeconds();
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12; if (h === 0) h = 12;
-
-    const colonOpacity = s % 2 === 0 ? '' : ' dim';
-    timeEl.innerHTML = `${pad(h)}<span class="colon${colonOpacity}">:</span>${pad(m)}`;
-    secEl.textContent = pad(s);
-    ampmEl.textContent = ampm;
-
-    dateEl.textContent = now.toLocaleDateString(undefined, {
-      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-    });
-  }
-
-  render();
-  setInterval(render, 1000);
-
-  // double-click to toggle fullscreen, handy on a dedicated monitor
-  document.getElementById('stage').addEventListener('dblclick', () => {
-    if (!document.fullscreenElement){
-      document.documentElement.requestFullscreen().catch(()=>{});
-    } else {
-      document.exitFullscreen();
+  <script>
+    // build a quiet tick ring: 60 marks, majors every 5
+    const ticksEl = document.getElementById('ticks');
+    for (let i = 0; i < 60; i++) {
+      const t = document.createElement('div');
+      t.className = 'tick' + (i % 5 === 0 ? ' major' : '');
+      t.style.transform = `translate(-50%,-50%) rotate(${i * 6}deg)`;
+      ticksEl.appendChild(t);
     }
-  });
-</script>
+
+    const timeEl = document.getElementById('time');
+    const secEl = document.getElementById('seconds');
+    const ampmEl = document.getElementById('ampm');
+    const dateEl = document.getElementById('date');
+    const nextEventEl = document.getElementById('nextEvent');
+    const stageEl = document.getElementById('stage');
+    const bannerEl = document.getElementById('alarmBanner');
+    const root = document.documentElement;
+
+    const pad = n => String(n).padStart(2, '0');
+    const PH_TZ = 'Asia/Manila';
+
+    // Read the current time as it is *in the Philippines*, regardless of the
+    // visitor's own timezone, using Intl to pull each field out reliably.
+    function getPHParts() {
+      const fmt = new Intl.DateTimeFormat('en-US', {
+        timeZone: PH_TZ,
+        hour12: false,
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', second: 'numeric',
+        weekday: 'long'
+      });
+      const parts = {};
+      fmt.formatToParts(new Date()).forEach(p => { parts[p.type] = p.value; });
+      return {
+        year: Number(parts.year),
+        month: Number(parts.month),
+        day: Number(parts.day),
+        hour: Number(parts.hour === '24' ? '0' : parts.hour),
+        minute: Number(parts.minute),
+        second: Number(parts.second),
+        weekday: parts.weekday
+      };
+    }
+
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    // --- Alarm schedule: Philippine time ---
+    const EVENTS = [
+      { hour: 12, minute: 0, label: 'Lunch Break', theme: 'lunch' },
+      { hour: 17, minute: 30, label: 'End of Work', theme: 'endwork' }
+    ];
+
+    const THEMES = {
+      lunch: { color: '#e08a3c', dim: '#8a5424', glow: 'rgba(224,138,60,0.28)' },
+      endwork: { color: '#4fb8c9', dim: '#2c6b74', glow: 'rgba(79,184,201,0.28)' }
+    };
+
+    let alarmActive = false;
+    let lastFiredKey = null; // prevents re-firing within the same minute
+
+    function setTheme(theme) {
+      if (theme && THEMES[theme]) {
+        root.style.setProperty('--alarm', THEMES[theme].color);
+        root.style.setProperty('--alarm-dim', THEMES[theme].dim);
+        root.style.setProperty('--alarm-glow', THEMES[theme].glow);
+      } else {
+        root.style.setProperty('--alarm', 'var(--amber)');
+        root.style.setProperty('--alarm-dim', 'var(--amber-dim)');
+        root.style.setProperty('--alarm-glow', 'rgba(201,162,77,0.16)');
+      }
+    }
+
+    // --- Alarm sound via Web Audio API (no external files needed) ---
+    let audioCtx = null;
+    function chime() {
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+        const notes = [880, 1108.73, 1318.51]; // A5, C#6, E6 — a bright three-note chime
+        notes.forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          const start = now + i * 0.22;
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.22, start + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.9);
+          osc.connect(gain).connect(audioCtx.destination);
+          osc.start(start);
+          osc.stop(start + 1);
+        });
+      } catch (e) { /* audio not available until a user gesture unlocks it */ }
+    }
+
+    function triggerAlarm(event, { silent = false } = {}) {
+      alarmActive = true;
+      setTheme(event.theme);
+      bannerEl.textContent = event.label;
+      bannerEl.classList.add('show');
+      if (!silent) chime();
+
+      clearTimeout(triggerAlarm._timer);
+      triggerAlarm._timer = setTimeout(() => {
+        alarmActive = false;
+        bannerEl.classList.remove('show');
+        setTheme(null);
+      }, 15000);
+    }
+
+    function checkAlarms(p) {
+      const match = EVENTS.find(e => e.hour === p.hour && e.minute === p.minute && p.second === 0);
+      if (match) {
+        const key = `${p.year}-${p.month}-${p.day}-${match.hour}-${match.minute}`;
+        if (key !== lastFiredKey) {
+          lastFiredKey = key;
+          triggerAlarm(match);
+        }
+      }
+    }
+
+    function minutesUntilNextEvent(p) {
+      const nowMins = p.hour * 60 + p.minute + p.second / 60;
+      let best = null;
+      EVENTS.forEach(e => {
+        let target = e.hour * 60 + e.minute;
+        if (target <= nowMins) target += 24 * 60; // tomorrow
+        const diff = target - nowMins;
+        if (best === null || diff < best.diff) best = { diff, e };
+      });
+      return best;
+    }
+
+    function render() {
+      const p = getPHParts();
+      let h = p.hour;
+      const m = p.minute;
+      const s = p.second;
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12; if (h === 0) h = 12;
+
+      const colonOpacity = s % 2 === 0 ? '' : ' dim';
+      timeEl.innerHTML = `${pad(h)}<span class="colon${colonOpacity}">:</span>${pad(m)}`;
+      secEl.textContent = pad(s);
+      ampmEl.textContent = ampm;
+
+      dateEl.textContent = `${p.weekday}, ${MONTHS[p.month - 1]} ${p.day}, ${p.year}`;
+
+      const next = minutesUntilNextEvent(p);
+      if (next && !alarmActive) {
+        const hrs = Math.floor(next.diff / 60);
+        const mins = Math.floor(next.diff % 60);
+        const parts = [];
+        if (hrs > 0) parts.push(`${hrs}h`);
+        parts.push(`${mins}m`);
+        nextEventEl.textContent = `Next · ${next.e.label} in ${parts.join(' ')}`;
+      } else if (alarmActive) {
+        nextEventEl.textContent = '';
+      }
+
+      checkAlarms(p);
+    }
+
+    render();
+    setInterval(render, 1000);
+
+    // double-click to toggle fullscreen, handy on a dedicated monitor
+    stageEl.addEventListener('dblclick', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => { });
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    // Manual test triggers so the alarm can be previewed without waiting
+    // for the real clock to reach 12:00 PM or 5:30 PM.
+    document.getElementById('testLunch').addEventListener('click', (e) => {
+      e.stopPropagation();
+      triggerAlarm(EVENTS[0]);
+    });
+    document.getElementById('testEnd').addEventListener('click', (e) => {
+      e.stopPropagation();
+      triggerAlarm(EVENTS[1]);
+    });
+  </script>
 
 </body>
+
 </html>
