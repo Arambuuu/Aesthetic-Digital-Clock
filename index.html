@@ -294,6 +294,35 @@
       border-color: var(--ink);
     }
 
+    .alarm-banner {
+      display: flex;
+      align-items: center;
+      gap: 1.2vmin;
+    }
+
+    #stopAlarmBtn {
+      font-family: 'Manrope', sans-serif;
+      font-size: 1vmin;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--alarm);
+      background: transparent;
+      border: 1.5px solid var(--alarm);
+      border-radius: 999px;
+      padding: 0.35vmin 1vmin;
+      cursor: pointer;
+      opacity: 0.85;
+      transition: opacity 0.2s, background 0.2s, color 0.2s;
+      flex-shrink: 0;
+    }
+
+    #stopAlarmBtn:hover {
+      opacity: 1;
+      background: var(--alarm);
+      color: #08090b;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .colon {
         transition: none;
@@ -317,7 +346,10 @@
     <div class="frame-label">Local Time · Philippines</div>
     <div class="next-event" id="nextEvent">—</div>
 
-    <div class="alarm-banner" id="alarmBanner">Lunch Break</div>
+    <div class="alarm-banner" id="alarmBanner">
+      <span id="alarmLabel">Lunch Break</span>
+      <button id="stopAlarmBtn" onclick="stopAlarm()" title="Stop alarm">&#10005; Stop</button>
+    </div>
 
     <div class="center">
       <div class="time-row">
@@ -334,6 +366,7 @@
     <div class="test-controls">
       <button id="testLunch">Test Lunch Alarm</button>
       <button id="testEnd">Test End‑of‑Work Alarm</button>
+      <button id="testStop" onclick="stopAlarm()">Stop Alarm</button>
     </div>
   </div>
 
@@ -410,13 +443,17 @@
       }
     }
 
-    // --- Alarm sound via Web Audio API (no external files needed) ---
+    // --- Alarm sound: WAV file with Web Audio API synth fallback ---
+    const alarmAudio = new Audio('sfx/mixkit-retro-game-emergency-alarm-1000.wav');
+    alarmAudio.preload = 'auto';
+    alarmAudio.loop = false;
+
     let audioCtx = null;
-    function chime() {
+    function synthChime() {
       try {
         audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
         const now = audioCtx.currentTime;
-        const notes = [880, 1108.73, 1318.51]; // A5, C#6, E6 — a bright three-note chime
+        const notes = [880, 1108.73, 1318.51]; // A5, C#6, E6 — fallback three-note chime
         notes.forEach((freq, i) => {
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
@@ -430,22 +467,35 @@
           osc.start(start);
           osc.stop(start + 1);
         });
-      } catch (e) { /* audio not available until a user gesture unlocks it */ }
+      } catch (e) { /* audio not available */ }
+    }
+
+    function chime() {
+      try {
+        alarmAudio.currentTime = 0;
+        alarmAudio.play().catch(() => synthChime()); // fallback if WAV blocked
+      } catch (e) {
+        synthChime();
+      }
+    }
+
+    function stopAlarm() {
+      alarmActive = false;
+      bannerEl.classList.remove('show');
+      setTheme(null);
+      clearTimeout(triggerAlarm._timer);
+      try { alarmAudio.pause(); alarmAudio.currentTime = 0; } catch (e) {}
     }
 
     function triggerAlarm(event, { silent = false } = {}) {
       alarmActive = true;
       setTheme(event.theme);
-      bannerEl.textContent = event.label;
+      document.getElementById('alarmLabel').textContent = event.label;
       bannerEl.classList.add('show');
       if (!silent) chime();
 
       clearTimeout(triggerAlarm._timer);
-      triggerAlarm._timer = setTimeout(() => {
-        alarmActive = false;
-        bannerEl.classList.remove('show');
-        setTheme(null);
-      }, 15000);
+      triggerAlarm._timer = setTimeout(stopAlarm, 15000);
     }
 
     function checkAlarms(p) {
